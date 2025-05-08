@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wonder Tale Prologue NFT Mint</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #0f0f0f;
+      color: #fff;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #3b82f6;
+      color: white;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>Wonder Tale Prologue NFT</h1>
+  <p id="wallet">Wallet: Not connected</p>
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <button id="approveBtn" onclick="approve()" disabled>Approve USDT</button>
+  <button id="mintBtn" onclick="mint()" disabled>Mint NFT</button>
+  <p id="status"></p>
+  <script>
+    const nftAddress = "0x0079D1482Cd50751822B8442B14080540FA5b352";
+    const usdtAddress = "0xE351284D8E178e908B2a9B4FF8F5fD832B61eB2C";
+    const usdtAbi = ["function approve(address spender, uint256 amount) public returns (bool)"];
+    const nftAbi = ["function mint(uint256 quantity) public"];
+
+    let provider, signer, usdt, nft;
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
+        document.getElementById("wallet").innerText = `Wallet: ${address}`;
+        usdt = new ethers.Contract(usdtAddress, usdtAbi, signer);
+        nft = new ethers.Contract(nftAddress, nftAbi, signer);
+        document.getElementById("approveBtn").disabled = false;
+      } else {
+        alert("Please install MetaMask.");
+      }
+    }
+
+    async function approve() {
+      const amount = ethers.utils.parseUnits("700", 6); // 700 USDT (6 decimals)
+      try {
+        const tx = await usdt.approve(nftAddress, amount);
+        document.getElementById("status").innerText = "Approving...";
+        await tx.wait();
+        document.getElementById("status").innerText = "Approved! Now mint your NFT.";
+        document.getElementById("mintBtn").disabled = false;
+      } catch (err) {
+        document.getElementById("status").innerText = "Approve failed.";
+        console.error(err);
+      }
+    }
+
+    async function mint() {
+      try {
+        const tx = await nft.mint(1);
+        document.getElementById("status").innerText = "Minting...";
+        await tx.wait();
+        document.getElementById("status").innerText = "Mint successful! View on OpenSea.";
+      } catch (err) {
+        document.getElementById("status").innerText = "Mint failed.";
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
